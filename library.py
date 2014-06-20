@@ -166,7 +166,7 @@ def edit_book(id):
 	if not session.get('logged_in'):
 		abort(401)
 
-	form = BookForm(request.forms)
+	form = BookForm(request.form)
 
 	if request.method == 'POST' and form.validate():
 		session_sql.query(Book).filter(Book.id==id).update({Book.title: form.title.data})
@@ -235,4 +235,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
-	app.run()
+	app.run(host="127.0.1.5")
