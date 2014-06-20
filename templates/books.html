@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}Books{% endblock %}
+{% block h1 %}Books{% endblock %}</h1>
+
+{% block body %}
+  <div class="left"><a class="button" href="javascript:delete_book();">Delete book</a></div>
+  <div class="right"><a class="button" href="{{ url_for('add_book') }}">Add book</a></div>
+  
+  <div class="clear"></div>
+  {% if books %}
+  	<div class="selected"><input type="checkbox" onclick="$('input[name*=\'selected\']').attr('checked', this.checked);">select all/deselect</div>
+  {% endif %}
+
+  <ul class=entries>
+  {% for book in books %}
+    <li>
+    <input type="checkbox"  name="selected" value="{{book.id}}">
+    <a href="{{ url_for('edit_book', id = book.id) }}">{{ book.title }}<a>
+  {% else %}
+    <li><em>There are no books.</em></li>
+  {% endfor %}
+  </ul>
+{% endblock %}

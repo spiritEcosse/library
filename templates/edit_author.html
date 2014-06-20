@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}{{author.name}}{% endblock %}
+{% block h1 %}{{author.name}}{% endblock %}
+
+{% block body %}
+	<div class="form">
+		<div class="left"><a class="button" href="{{ url_for('delete_author', id = author.id) }}">Delete this author</a></div>
+		<div class="right"><a class="button" href="{{ url_for('authors') }}">List authors</a></div>
+  		<div class="clear"></div>
+
+		{% from "_formhelpers.html" import render_field %}
+		<form action="{{ url_for('edit_author', id = author.id) }}" method=post>
+			<dl>
+				{{ render_field(form.name) }}
+				{{ render_field(form.books) }}
+			</dl>
+		    <div class="save"><input type=submit value=save></div>
+		</form>
+	</div>
+{% endblock %}

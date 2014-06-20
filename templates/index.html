@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block body %}
+  <ul class=entries>
+  {% for entity_name, entity_act in entities.items() %}
+    <li><a href="{{ url_for(entity_act) }}">{{ entity_name }}</a>
+  {% endfor %}
+  </ul>
+{% endblock %}

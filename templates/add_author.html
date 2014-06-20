@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}Add author{% endblock %}
+{% block h1 %}Add author{% endblock %}
+
+{% block body %}
+	<div class="form">
+		<div class="right"><a class="button" href="{{ url_for('authors') }}">List authors</a></div>
+	  	<div class="clear"></div>
+		
+	    <form action="{{ url_for('add_author') }}" method=post>
+			<div class="text_name">Name:</div>
+			<div class="name"><input type=text size=30 name=name></div>
+
+			{% if books %}
+				<div class="related_entity">Books</div>
+				<select multiple class="related_select" name="books">
+					{% for book in books %}
+						<option value="{{book.id}}">{{ book.title }}</option>
+					{% endfor %}
+				</select>
+			{% endif %}
+		    <div class="save"><input type=submit value=save></div>			
+	    </form>
+	</div>
+{% endblock %}
