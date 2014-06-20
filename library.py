@@ -1,7 +1,8 @@
 #!/venv/bin/python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 import sqlite3
+import re
 import os
 from flask import Flask, request, session, g, redirect, jsonify, url_for, abort, \
      render_template, flash	
@@ -38,6 +39,18 @@ def index():
     entities = {'Books': 'books', 'Authors': 'authors'}
     return render_template('index.html', entities=entities)
 
+@app.route('/search', methods=['POST', 'GET'])
+def search():
+	if request.method == 'POST':
+		keyword = request.form['keyword']
+		books = session_sql.query(Book).filter(Book.title.like('%' + keyword + '%')).all()
+		authors = session_sql.query(Author).filter(Author.name.like('%' + keyword + '%')).all()
+
+		if books or authors:
+			return render_template('search.html', books=books, authors=authors)
+
+		flash('There are no results.')
+	return render_template('search.html')
 
 @app.route('/authors')
 def authors():
@@ -51,11 +64,10 @@ def edit_author(id):
 
 	form = AuthorForm(request.form)
 
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		session_sql.query(Author).filter(Author.id==id).update({Author.name: form.name.data})
 		session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id==id).delete()
 
-		# добавить пачку
 		for book_id in form.books.choices:
 			session_sql.add(BookAndAuthor(id, book_id))
 
@@ -64,19 +76,11 @@ def edit_author(id):
 		return redirect(url_for('authors'))
 
 	author = session_sql.query(Author).filter(Author.id==id).one()
-	books = session_sql.query(Book).order_by(desc(Book.id)).all()
 	form.name.data = author.name
+	books = session_sql.query(Book).order_by(desc(Book.id)).all()
 	form.books.choices = [(book.id, book.title) for book in books]
-
-	# author = session_sql.query(Author).filter(Author.id==id).one()
-	# join Author BookAndAuthor
-	# books = session_sql.query(Book).order_by(desc(Book.id)).all()
 	book_and_author = session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id==id).all()
 	form.books.default = [book.book_id for book in book_and_author]
-	# books_author = []
-
-	# for data in book_and_author:
-		# books_author.append(data.book_id)
 	return render_template('edit_author.html', form=form, author=author)
 
 @app.route('/delete_author/<int:id>', methods=['GET'])
@@ -108,21 +112,23 @@ def add_author():
 	if not session.get('logged_in'):
 		abort(401)
 
-	if request.method == 'POST':
-		author = Author(request.form['name'])
+	form = AuthorForm(request.form)
+
+	if request.method == 'POST' and form.validate():
+		author = Author(form.name.data)
 		session_sql.add(author)
 		session_sql.commit()
 
-		# добавить пачку
-		for book_id in request.form.getlist('books'):
+		for book_id in form.books.choices:
 			session_sql.add(BookAndAuthor(author.id, book_id))
 
 		session_sql.commit()
-		flash('New author was successfully posted')
+		flash('New author was successfully add')
 		return redirect(url_for('authors'))
 
 	books = session_sql.query(Book).order_by(desc(Book.id)).all()
-	return render_template('add_author.html', books=books)
+	form.books.choices = [(book.id, book.title) for book in books]
+	return render_template('add_author.html', form=form)
 
 
 
@@ -136,33 +142,37 @@ def add_book():
 	if not session.get('logged_in'):
 		abort(401)
 
-	if request.method == 'POST':
-		book = Book(request.form['title'])
+	form = BookForm(request.form)
+
+	if request.method == 'POST' and form.validate():
+		book = Book(form.title.data)
 		session_sql.add(book)
 		session_sql.commit()
 
-		# добавить пачку
-		for author_id in request.form.getlist('authors'):
+		for author_id in form.authors.choices:
 			session_sql.add(BookAndAuthor(author_id, book.id))
 
 		session_sql.commit()
-		flash('New book was successfully posted')
+		flash('New book was successfully add')
 		return redirect(url_for('books'))
 
 	authors = session_sql.query(Author).order_by(desc(Author.id)).all()
-	return render_template('add_book.html', authors=authors)
+	form.authors.choices = [(author.id, author.name) for author in authors]
+	session_sql.commit()
+	return render_template('add_book.html', form=form)
 
 @app.route('/edit_book/<int:id>', methods=['POST', 'GET'])
 def edit_book(id):
 	if not session.get('logged_in'):
 		abort(401)
 
-	if request.method == 'POST':
-		session_sql.query(Book).filter(Book.id==id).update({Book.title: request.form['title']})
+	form = BookForm(request.forms)
+
+	if request.method == 'POST' and form.validate():
+		session_sql.query(Book).filter(Book.id==id).update({Book.title: form.title.data})
 		session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id==id).delete()
 
-		# добавить пачку
-		for author_id in request.form.getlist('authors'):
+		for author_id in form.authors.choices:
 			session_sql.add(BookAndAuthor(author_id, id))
 
 		session_sql.commit()
@@ -170,16 +180,12 @@ def edit_book(id):
 		return redirect(url_for('books'))
 
 	book = session_sql.query(Book).filter(Book.id==id).one()
-	# join Author BookAndAuthor
+	form.title.data = book.title
 	authors = session_sql.query(Author).order_by(desc(Author.id)).all()
+	form.authors.choices = [(author.id, author.name) for author in authors]
 	book_and_author = session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id==id).all()
-	authors_book = []
-
-	for data in book_and_author:
-		authors_book.append(data.author_id)
-
-	session_sql.commit()
-	return render_template('edit_book.html', book=book, authors=authors, authors_book=authors_book)
+	form.authors.default = [author.author_id for author in book_and_author]
+	return render_template('edit_book.html', book=book, form=form)
 
 @app.route('/delete_book/<int:id>')
 def delete_book(id):

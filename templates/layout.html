@@ -17,6 +17,11 @@
     {% endif %}
     </div>
 
+    <form method=post action="{{ url_for('search') }}">
+      <input type="text" name="keyword">
+      <input type=submit value=search>
+    </form>
+    
     <h1>{% block h1 %}Library{% endblock %}</h1>
 
     {% for message in get_flashed_messages() %}

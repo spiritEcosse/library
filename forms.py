@@ -13,7 +13,8 @@ class MultiCheckboxField(SelectMultipleField):
 
 class BookForm(Form):
 	title = TextField('Title', [validators.Length(min=2, max=50)])
+	authors = MultiCheckboxField('Authors', choices=[], default=[])
 
 class AuthorForm(Form):
 	name = TextField('Name', [validators.Length(min=2, max=50)])
-	books = MultiCheckboxField('Book', choices=[], default=[])
+	books = MultiCheckboxField('Books', choices=[], default=[])

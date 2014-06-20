@@ -9,25 +9,13 @@
 		<div class="right"><a class="button" href="{{ url_for('books') }}">List books</a></div>
 	  	<div class="clear"></div>
 
+		{% from "_formhelpers.html" import render_field %}
 		<form action="{{ url_for('edit_book', id = book.id) }}" method=post>
-		    <div class="text_name">Title:</div>
-		    <div class="name"><input type=text size=30 name=title value="{{book.title}}"></div>
-
-		    {% if authors %}
-				<div class="related_entity">Authors</div>
-				<select multiple class="related_select" name="authors">
-					{% for author in authors %}
-						<option value="{{author.id}}"
-						{% if author.id in authors_book %}
-							selected 
-						{% endif %}
-						>{{ author.name }}</option>
-					{% endfor %}
-				</select>
-			{% endif %}
-
+			<dl>
+				{{ render_field(form.title) }}
+				{{ render_field(form.authors) }}
+			</dl>			
 		    <div class="save"><input type=submit value=save></div>
 		</form>
-
 	</div>
 {% endblock %}
