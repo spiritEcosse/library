@@ -1,5 +1,5 @@
 from wtforms import Form, BooleanField, TextField, PasswordField, validators, SelectMultipleField, widgets, SelectField
-from wtforms.validators import StopValidation, ValidationError, InputRequired
+from wtforms.validators import StopValidation, ValidationError
 
 class MultiCheckboxField(SelectMultipleField):
 	widget = widgets.ListWidget(prefix_label=False)
@@ -7,8 +7,8 @@ class MultiCheckboxField(SelectMultipleField):
 
 class BookForm(Form):
 	title = TextField('Title', [validators.Length(min=2, max=50)])
-	authors = MultiCheckboxField('Authors', choices=[], default=[], coerce=int, validators=[InputRequired()])
+	authors = MultiCheckboxField('Authors', choices=[], default=[], coerce=int)
 
 class AuthorForm(Form):
 	name = TextField('Name', [validators.Length(min=2, max=50)])
-	books = MultiCheckboxField('Books', choices=[], default=[], coerce=int, validators=[InputRequired()])
+	books = MultiCheckboxField('Books', choices=[], default=[], coerce=int)
