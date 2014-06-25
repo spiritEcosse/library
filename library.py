@@ -9,7 +9,7 @@ from flask import Flask, request, session, g, redirect, jsonify, url_for, abort,
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, create_engine, desc, update
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from models import Author, Book, BookAndAuthor
+from models import Author, Book
 from forms import BookForm, AuthorForm
 
 app = Flask(__name__)
@@ -63,24 +63,25 @@ def edit_author(id):
 		abort(401)
 
 	form = AuthorForm(request.form)
+	author = session_sql.query(Author).get(id)
 
 	if request.method == 'POST' and form.validate():
-		session_sql.query(Author).filter(Author.id==id).update({Author.name: form.name.data})
-		session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id==id).delete()
+		author.name = form.name.data
 
 		for book_id in form.books.choices:
-			session_sql.add(BookAndAuthor(id, book_id))
+			book = session_sql.query(Book).get(book_id)
+			author.book.append(book)
 
-		session_sql.commit()
 		flash('Author was successfully update')
 		return redirect(url_for('authors'))
 
-	author = session_sql.query(Author).filter(Author.id==id).one()
 	form.name.data = author.name
 	books = session_sql.query(Book).order_by(desc(Book.id)).all()
 	form.books.choices = [(book.id, book.title) for book in books]
-	book_and_author = session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id==id).all()
-	form.books.default = [book.book_id for book in book_and_author]
+
+	books = author.book
+	form.books.default = [book.id for book in books]
+	session_sql.commit()
 	return render_template('edit_author.html', form=form, author=author)
 
 @app.route('/delete_author/<int:id>', methods=['GET'])
@@ -88,9 +89,8 @@ def delete_author(id):
 	if not session.get('logged_in'):
 		abort(401)
 
-	session_sql.query(Author).filter(Author.id==id).delete()
-	# join
-	session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id==id).delete()
+	author = session_sql.query(Author).get(id)
+	session_sql.delete(author)
 	session_sql.commit()
 	flash('Author was successfully delete')
 	return redirect(url_for('authors'))
@@ -102,8 +102,6 @@ def delete_author_list():
 
 	ids = [int(arg) for arg in request.form['ids'].split(',')]
 	session_sql.query(Author).filter(Author.id.in_(ids)).delete(synchronize_session='fetch')
-	# join
-	session_sql.query(BookAndAuthor).filter(BookAndAuthor.author_id.in_(ids)).delete(synchronize_session='fetch')
 	session_sql.commit()
 	return jsonify(redirect='authors')
 
@@ -120,7 +118,8 @@ def add_author():
 		session_sql.commit()
 
 		for book_id in form.books.choices:
-			session_sql.add(BookAndAuthor(author.id, book_id))
+			book = session_sql.query(Book).get(book_id)
+			author.book.append(book)
 
 		session_sql.commit()
 		flash('New author was successfully add')
@@ -150,7 +149,8 @@ def add_book():
 		session_sql.commit()
 
 		for author_id in form.authors.choices:
-			session_sql.add(BookAndAuthor(author_id, book.id))
+			author = session_sql.query(Author).get(author_id)
+			book.authors.append(author)
 
 		session_sql.commit()
 		flash('New book was successfully add')
@@ -167,24 +167,25 @@ def edit_book(id):
 		abort(401)
 
 	form = BookForm(request.form)
+	book = session_sql.query(Book).get(id)
 
 	if request.method == 'POST' and form.validate():
-		session_sql.query(Book).filter(Book.id==id).update({Book.title: form.title.data})
-		session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id==id).delete()
+		book.title = form.title.data
 
 		for author_id in form.authors.choices:
-			session_sql.add(BookAndAuthor(author_id, id))
+			author = session_sql.query(Book).get(book_id)
+			book.authors.append(author)
 
 		session_sql.commit()
 		flash('Book was successfully update')
 		return redirect(url_for('books'))
 
-	book = session_sql.query(Book).filter(Book.id==id).one()
 	form.title.data = book.title
 	authors = session_sql.query(Author).order_by(desc(Author.id)).all()
 	form.authors.choices = [(author.id, author.name) for author in authors]
-	book_and_author = session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id==id).all()
-	form.authors.default = [author.author_id for author in book_and_author]
+
+	authors = book.authors
+	form.authors.default = [author.id for author in authors]
 	return render_template('edit_book.html', book=book, form=form)
 
 @app.route('/delete_book/<int:id>')
@@ -192,9 +193,8 @@ def delete_book(id):
 	if not session.get('logged_in'):
 		abort(401)
 
-	session_sql.query(Book).filter(Book.id==id).delete()
-	# join
-	session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id==id).delete()
+	book = session_sql.query(Book).get(id)
+	session_sql.delete(book)
 	session_sql.commit()
 	flash('Book was successfully delete')
 	return redirect(url_for('books'))
@@ -206,8 +206,6 @@ def delete_book_list():
 
 	ids = [int(arg) for arg in request.form['ids'].split(',')]
 	session_sql.query(Book).filter(Book.id.in_(ids)).delete(synchronize_session='fetch')
-	# join
-	session_sql.query(BookAndAuthor).filter(BookAndAuthor.book_id.in_(ids)).delete(synchronize_session='fetch')
 	session_sql.commit()
 	return jsonify(redirect='books')
 
@@ -235,4 +233,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
-	app.run(host="127.0.1.5")
+	app.run()
