@@ -14,7 +14,7 @@ class Author(Base):
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
 	book = relationship("Book",
-                    secondary = book_and_author,
+                    secondary = lambda: book_and_author,
                     backref="authors")
 
 	def __init__(self, name):
