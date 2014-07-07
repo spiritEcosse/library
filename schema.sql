@@ -60,6 +60,3 @@ insert into book_and_author (book_id, author_id) values(6, 6);
 
 insert into book_and_author (book_id, author_id) values(7, 7);
 insert into book_and_author (book_id, author_id) values(7, 1);
-
-
-

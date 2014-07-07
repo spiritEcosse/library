@@ -22,16 +22,10 @@ app.config.update(dict(
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
-engine = create_engine('sqlite:///' + os.path.join(app.root_path, 'library.db'))
+engine = create_engine('sqlite:///' + os.path.join(app.root_path, app.config['DATABASE']))
 Session = sessionmaker(bind=engine)
 session_sql = Session()
 
-# def init_db():
-# 	with app.app_context():
-# 		with app.open_resource('schema.sql', mode='r') as f:
-# 			session_sql.execute(f.read())
-# 		session_sql.commit()
-	
 def connect_db():
 	rv = sqlite3.connect(app.config['DATABASE'])
 	rv.row_factory = sqlite3.Row
